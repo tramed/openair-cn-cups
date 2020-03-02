@@ -115,7 +115,7 @@ pipeline {
     stage ('Start OAI SGPW-C Container') {
       steps {
         script {
-          myShCmd('docker run --name ci-oai-spgwc -d ubuntu:bionic /bin/bash -c "sleep infinity"', new_host_flag, new_host_user, new_host)
+          myShCmd('docker run --privileged --name ci-oai-spgwc -d ubuntu:bionic /bin/bash -c "sleep infinity"', new_host_flag, new_host_user, new_host)
           myShCmd('docker cp ./openair-cn-cups.tar.bz2 ci-oai-spgwc:/home', new_host_flag, new_host_user, new_host)
           myShCmd('docker exec -it ci-oai-spgwc /bin/bash -c "cd /home && tar -xjf openair-cn-cups.tar.bz2"', new_host_flag, new_host_user, new_host)
           myShCmd('docker exec -it ci-oai-spgwc /bin/bash -c "rm -f /home/openair-cn-cups.tar.bz2"', new_host_flag, new_host_user, new_host)
@@ -134,7 +134,7 @@ pipeline {
     stage ('Start OAI SGPW-U Container') {
       steps {
         script {
-          myShCmd('docker run --name ci-oai-spgwu -d ubuntu:bionic /bin/bash -c "sleep infinity"', new_host_flag, new_host_user, new_host)
+          myShCmd('docker run --privileged --name ci-oai-spgwu -d ubuntu:bionic /bin/bash -c "sleep infinity"', new_host_flag, new_host_user, new_host)
           myShCmd('docker cp ./openair-cn-cups.tar.bz2 ci-oai-spgwu:/home', new_host_flag, new_host_user, new_host)
           myShCmd('docker exec -it ci-oai-spgwu /bin/bash -c "cd /home && tar -xjf openair-cn-cups.tar.bz2"', new_host_flag, new_host_user, new_host)
           myShCmd('docker exec -it ci-oai-spgwu /bin/bash -c "rm -f /home/openair-cn-cups.tar.bz2"', new_host_flag, new_host_user, new_host)
@@ -313,7 +313,7 @@ pipeline {
     cleanup {
       script {
         // Killing all containers
-        myShCmd('docker rm -f ci-oai-spgwc ci-oai-spgwu', new_host_flag, new_host_user, new_host)
+        //myShCmd('docker rm -f ci-oai-spgwc ci-oai-spgwu', new_host_flag, new_host_user, new_host)
         if (fileExists('test_results_oai_cn.html')) {
           archiveArtifacts artifacts: 'test_results_oai_cn.html'
         }
