@@ -277,6 +277,60 @@ pipeline {
       }
     }
   }
+  post {
+    success {
+      script {
+        def message = "Build job #" + BUILD_ID + " completed"
+        updateGithubCommitStatus(currentBuild, message)
+        def socialMessage = "OAI " + JOB_NAME + " build (" + BUILD_ID + "): passed (" + BUILD_URL + ")"
+        sendSocialMediaMessage('ci-epc', 'good', socialMessage)
+      }
+    }
+    failure {
+      script {
+        def message = "Build job #" + BUILD_ID + " : One step of job failed"
+        updateGithubCommitStatus(currentBuild, message)
+        def socialMessage = "OAI " + JOB_NAME + " build (" + BUILD_ID + "): failed (" + BUILD_URL + ")"
+        sendSocialMediaMessage('ci-epc', 'danger', socialMessage)
+      }
+    }
+    unstable {
+      script {
+        def message = "Build job #" + BUILD_ID + " : One step of job is unstable"
+        updateGithubCommitStatus(currentBuild, message)
+        def socialMessage = "OAI " + JOB_NAME + " build (" + BUILD_ID + "): unstable (" + BUILD_URL + ")"
+        sendSocialMediaMessage('ci-epc', 'danger', socialMessage)
+      }
+    }
+    aborted {
+      script {
+        def message = "Build job #" + BUILD_ID + " aborted: pipeline script issue?"
+        updateGithubCommitStatus(currentBuild, message)
+        def socialMessage = "OAI " + JOB_NAME + " build (" + BUILD_ID + "): aborted (" + BUILD_URL + ")"
+        sendSocialMediaMessage('ci-epc', 'danger', socialMessage)
+      }
+    }
+    cleanup {
+      script {
+        // Killing all containers
+        myShCmd('docker rm -f ci-oai-spgwc ci-oai-spgwu', new_host_flag, new_host_user, new_host)
+        if (fileExists('test_results_oai_cn.html')) {
+          archiveArtifacts artifacts: 'test_results_oai_cn.html'
+        }
+        // Sending an email to the last committer. Maybe not the Pull Request's author.
+        def emailTo = getCommitterEmail()
+        emailext attachmentsPattern: '*results*.html',
+          body: '''Hi,
+Here are attached HTML report files for $PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!
+
+Regards,
+OAI CI Team''',
+          replyTo: 'no-reply@openairinterface.org',
+          subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!',
+          to: emailTo
+      }
+    }
+  }
 }
 
 // Removing all info -- do not know if git clean command removes them
