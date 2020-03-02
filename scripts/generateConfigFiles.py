@@ -57,8 +57,9 @@ def GenerateSpgwcConfigurer(s11c_name, sxc_name):
 	spgwcFile.write('\n')
 	spgwcFile.write('for K in "${!SPGWC_CONF[@]}"; do \n')
 	spgwcFile.write('  egrep -lRZ "$K" $PREFIX | xargs -0 -l sed -i -e "s|$K|${SPGWC_CONF[$K]}|g"\n')
-	spgwcFile.write('  ret=$?;[[ ret -ne 0 ]] && echo "Tried to replace $K with ${SPGWC_CONF[$K]}"\n')
 	spgwcFile.write('done\n')
+	spgwcFile.write('\n')
+	spgwcFile.write('exit 0\n')
 	spgwcFile.close()
 
 def GenerateSpgwuConfigurer(s1u_name, sxc_name, spgwc0_ip_addr):
@@ -83,8 +84,9 @@ def GenerateSpgwuConfigurer(s1u_name, sxc_name, spgwc0_ip_addr):
 	spgwuFile.write('\n')
 	spgwuFile.write('for K in "${!SPGWU_CONF[@]}"; do \n')
 	spgwuFile.write('  egrep -lRZ "$K" $PREFIX | xargs -0 -l sed -i -e "s|$K|${SPGWU_CONF[$K]}|g"\n')
-	spgwuFile.write('  ret=$?;[[ ret -ne 0 ]] && echo "Tried to replace $K with ${SPGWU_CONF[$K]}"\n')
 	spgwuFile.write('done\n')
+	spgwuFile.write('\n')
+	spgwuFile.write('exit 0\n')
 	spgwuFile.close()
 
 #-----------------------------------------------------------
