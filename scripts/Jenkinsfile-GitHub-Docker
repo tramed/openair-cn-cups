@@ -112,15 +112,6 @@ pipeline {
         }
       }
     }
-    stage ('Create Docker Networks') {
-      steps {
-        script {
-          myShCmd('docker network create --attachable --subnet 192.168.28.0/24 --ip-range 192.168.28.0/24 ci-s11', new_host_flag, new_host_user, new_host)
-          myShCmd('docker network create --attachable --subnet 192.168.29.0/24 --ip-range 192.168.29.0/24 ci-sx', new_host_flag, new_host_user, new_host)
-          myShCmd('docker network create --attachable --subnet 192.168.30.0/24 --ip-range 192.168.30.0/24 ci-s1u', new_host_flag, new_host_user, new_host)
-        }
-      }
-    }
     stage ('Start OAI SGPW-C Container') {
       steps {
         script {
@@ -282,6 +273,15 @@ pipeline {
               sh "echo 'OAI-SPGW-U BUILD: KO' >> archives/spgwu_build.log"
             }
           }
+        }
+      }
+    }
+    stage ('Create Docker Networks') {
+      steps {
+        script {
+          myShCmd('docker network create --attachable --subnet 192.168.28.0/24 --ip-range 192.168.28.0/24 ci-s11', new_host_flag, new_host_user, new_host)
+          myShCmd('docker network create --attachable --subnet 192.168.29.0/24 --ip-range 192.168.29.0/24 ci-sx', new_host_flag, new_host_user, new_host)
+          myShCmd('docker network create --attachable --subnet 192.168.30.0/24 --ip-range 192.168.30.0/24 ci-s1u', new_host_flag, new_host_user, new_host)
         }
       }
     }
