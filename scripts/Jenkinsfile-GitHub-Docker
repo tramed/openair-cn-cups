@@ -366,6 +366,8 @@ pipeline {
         //myShCmd('docker rm -f ci-oai-spgwc ci-oai-spgwu', new_host_flag, new_host_user, new_host)
         // Killing all networks
         //myShCmd('docker network rm ci-s11 ci-sx ci-s1u', new_host_flag, new_host_user, new_host)
+        //myShCmd('docker network prune', new_host_flag, new_host_user, new_host)
+        //myShCmd('sudo service docker restart', new_host_flag, new_host_user, new_host)
         if (fileExists('test_results_oai_cn.html')) {
           archiveArtifacts artifacts: 'test_results_oai_cn.html'
         }
