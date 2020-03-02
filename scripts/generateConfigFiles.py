@@ -69,7 +69,7 @@ def GenerateSpgwuConfigurer(s1u_name, sxc_name, spgwc0_ip_addr):
 	spgwuFile.write('\n')
 	spgwuFile.write('INSTANCE=1\n')
 	spgwuFile.write('PREFIX=\'/usr/local/etc/oai\'\n')
-	spgwuFile.write('sudo mkdir -m 0777 -p $PREFIX\n')
+	spgwuFile.write('mkdir -p $PREFIX\n')
 	spgwuFile.write('cp etc/spgw_u.conf $PREFIX\n')
 	spgwuFile.write('\n')
 	spgwuFile.write('declare -A SPGWU_CONF\n')
@@ -172,5 +172,5 @@ if kind == 'SPGW-U':
 		Usage()
 		sys.exit('missing SPGW-C #0 IP address on SX interface')
 	else:
-		GenerateSpgwuConfigurer(s1u, sxu, spgwc0_ip_addr):
+		GenerateSpgwuConfigurer(s1u, sxu, spgwc0_ip_addr)
 		sys.exit(0)
