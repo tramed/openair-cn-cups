@@ -28,7 +28,7 @@ def GenerateSpgwcConfigurer(s11c_name, sxc_name):
 	spgwcFile = open('./spgwc-cfg.sh', 'w')
 	spgwcFile.write('#!/bin/bash\n')
 	spgwcFile.write('\n')
-	spgwcFile.write('cd /home/scripts\n')
+	spgwcFile.write('cd /home\n')
 	spgwcFile.write('\n')
 	spgwcFile.write('ifconfig lo:s5c 127.0.0.15 up\n')
 	spgwcFile.write('ifconfig lo:p5c 127.0.0.16 up\n')
@@ -46,7 +46,6 @@ def GenerateSpgwcConfigurer(s11c_name, sxc_name):
 	spgwcFile.write('declare -A SPGWC_CONF\n')
 	spgwcFile.write('\n')
 	spgwcFile.write('SPGWC_CONF[@INSTANCE@]=$INSTANCE\n')
-	spgwcFile.write('SPGWC_CONF[@PREFIX@]=$PREFIX\n')
 	spgwcFile.write('SPGWC_CONF[@PID_DIRECTORY@]=\'/var/run\'\n')
 	spgwcFile.write('SPGWC_CONF[@SGW_INTERFACE_NAME_FOR_S11@]=\'' + s11c_name + '\'\n')
 	spgwcFile.write('SPGWC_CONF[@SGW_INTERFACE_NAME_FOR_S5_S8_CP@]=\'lo:s5c\'\n')
@@ -62,12 +61,30 @@ def GenerateSpgwcConfigurer(s11c_name, sxc_name):
 	spgwcFile.write('done\n')
 	spgwcFile.close()
 
-def GenerateSpgwuConfigurer():
+def GenerateSpgwuConfigurer(s1u_name, sxc_name, spgwc0_ip_addr):
 	spgwuFile = open('./spgwu-cfg.sh', 'w')
 	spgwuFile.write('#!/bin/bash\n')
 	spgwuFile.write('\n')
-	spgwuFile.write('cd /home/scripts\n')
+	spgwuFile.write('cd /home\n')
 	spgwuFile.write('\n')
+	spgwuFile.write('INSTANCE=1\n')
+	spgwuFile.write('PREFIX=\'/usr/local/etc/oai\'\n')
+	spgwuFile.write('sudo mkdir -m 0777 -p $PREFIX\n')
+	spgwuFile.write('cp etc/spgw_u.conf $PREFIX\n')
+	spgwuFile.write('\n')
+	spgwuFile.write('declare -A SPGWU_CONF\n')
+	spgwuFile.write('\n')
+	spgwuFile.write('SPGWU_CONF[@INSTANCE@]=$INSTANCE\n')
+	spgwuFile.write('SPGWU_CONF[@PID_DIRECTORY@]=\'/var/run\'\n')
+	spgwuFile.write('SPGWU_CONF[@SGW_INTERFACE_NAME_FOR_S1U_S12_S4_UP@]=\'' + s1u_name + '\'\n')
+	spgwuFile.write('SPGWU_CONF[@SGW_INTERFACE_NAME_FOR_SX@]=\'' + sxc_name + '\'\n')
+	spgwuFile.write('SPGWU_CONF[@SGW_INTERFACE_NAME_FOR_SGI@]=\'eth0\'\n')
+	spgwuFile.write('SPGWU_CONF[@SPGWC0_IP_ADDRESS@]=\'' + spgwc0_ip_addr + '\'\n')
+	spgwuFile.write('\n')
+	spgwuFile.write('for K in "${!SPGWU_CONF[@]}"; do \n')
+	spgwuFile.write('  egrep -lRZ "$K" $PREFIX | xargs -0 -l sed -i -e "s|$K|${SPGWU_CONF[$K]}|g"\n')
+	spgwuFile.write('  ret=$?;[[ ret -ne 0 ]] && echo "Tried to replace $K with ${SPGWU_CONF[$K]}"\n')
+	spgwuFile.write('done\n')
 	spgwuFile.close()
 
 #-----------------------------------------------------------
@@ -87,8 +104,9 @@ def Usage():
 	print('  --sxc=[SPGW-C SX Interface Name]')
 	print('------------------------------------------------------------------------------------------------- SPGW-U Options -----')
 	print('  --kind=SPGW-U')
-	print('  --sxc=[SPGW-C SX IP address]')
+	print('  --sxc_ip_addr=[SPGW-C SX IP address]')
 	print('  --sxu=[SPGW-U SX Interface Name]')
+	print('  --s1u=[SPGW-U S1-U Interface Name]')
 
 argvs = sys.argv
 argc = len(argvs)
@@ -98,6 +116,8 @@ kind = ''
 s11c = ''
 sxc = ''
 sxu = ''
+spgwc0_ip_addr = ''
+s1u = ''
 
 while len(argvs) > 1:
 	myArgv = argvs.pop(1)
@@ -116,6 +136,12 @@ while len(argvs) > 1:
 	elif re.match('^\-\-sxu=(.+)$', myArgv, re.IGNORECASE):
 		matchReg = re.match('^\-\-sxu=(.+)$', myArgv, re.IGNORECASE)
 		sxu = matchReg.group(1)
+	elif re.match('^\-\-sxc_ip_addr=(.+)$', myArgv, re.IGNORECASE):
+		matchReg = re.match('^\-\-sxc_ip_addr=(.+)$', myArgv, re.IGNORECASE)
+		spgwc0_ip_addr = matchReg.group(1)
+	elif re.match('^\-\-s1u=(.+)$', myArgv, re.IGNORECASE):
+		matchReg = re.match('^\-\-s1u=(.+)$', myArgv, re.IGNORECASE)
+		s1u = matchReg.group(1)
 	else:
 		Usage()
 		sys.exit('Invalid Parameter: ' + myArgv)
@@ -135,13 +161,16 @@ if kind == 'SPGW-C':
 		GenerateSpgwcConfigurer(s11c, sxc)
 		sys.exit(0)
 
-if kind == 'MME':
-	if mme_s6a_IP == '':
+if kind == 'SPGW-U':
+	if sxu == '':
 		Usage()
-		sys.exit('missing MME S6A IP address')
-	elif hss_s6a_IP == '':
+		sys.exit('missing SX Interface Name on SPGW-U container')
+	elif s1u == '':
 		Usage()
-		sys.exit('missing HSS S6A IP address')
+		sys.exit('missing S1-U Interface Name on SPGW-U container')
+	elif spgwc0_ip_addr == '':
+		Usage()
+		sys.exit('missing SPGW-C #0 IP address on SX interface')
 	else:
-		GenerateMMEConfigurer(mme_s6a_IP, hss_s6a_IP)
+		GenerateSpgwuConfigurer(s1u, sxu, spgwc0_ip_addr):
 		sys.exit(0)
