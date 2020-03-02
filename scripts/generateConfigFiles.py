@@ -63,6 +63,12 @@ def GenerateSpgwcConfigurer(s11c_name, sxc_name):
 	spgwcFile.close()
 
 def GenerateSpgwuConfigurer():
+	spgwuFile = open('./spgwu-cfg.sh', 'w')
+	spgwuFile.write('#!/bin/bash\n')
+	spgwuFile.write('\n')
+	spgwuFile.write('cd /home/scripts\n')
+	spgwuFile.write('\n')
+	spgwuFile.close()
 
 #-----------------------------------------------------------
 # Usage()
