@@ -112,7 +112,7 @@ pipeline {
         }
       }
     }
-    stage ('Start OAI SGPW-C Container') {
+    stage ('Start OAI SPGW-C Container') {
       steps {
         script {
           myShCmd('docker run --privileged --name ci-oai-spgwc -d ubuntu:bionic /bin/bash -c "sleep infinity"', new_host_flag, new_host_user, new_host)
@@ -124,14 +124,14 @@ pipeline {
       }
       post {
         success {
-          sh "echo 'OAI-SGPW-C START: OK' > archives/spgwc-docker-start.log"
+          sh "echo 'OAI-SPGW-C START: OK' > archives/spgwc-docker-start.log"
         }
         unsuccessful {
-          sh "echo 'OAI-SGPW-C START: KO' > archives/spgwc-docker-start.log"
+          sh "echo 'OAI-SPGW-C START: KO' > archives/spgwc-docker-start.log"
         }
       }
     }
-    stage ('Start OAI SGPW-U Container') {
+    stage ('Start OAI SPGW-U Container') {
       steps {
         script {
           myShCmd('docker run --privileged --name ci-oai-spgwu -d ubuntu:bionic /bin/bash -c "sleep infinity"', new_host_flag, new_host_user, new_host)
@@ -143,10 +143,10 @@ pipeline {
       }
       post {
         success {
-          sh "echo 'OAI-SGPW-U START: OK' > archives/spgwu-docker-start.log"
+          sh "echo 'OAI-SPGW-U START: OK' > archives/spgwu-docker-start.log"
         }
         unsuccessful {
-          sh "echo 'OAI-SGPW-U START: KO' > archives/spgwu-docker-start.log"
+          sh "echo 'OAI-SPGW-U START: KO' > archives/spgwu-docker-start.log"
         }
       }
     }
@@ -243,7 +243,9 @@ pipeline {
           post {
             always {
               script {
+                myShCmd('docker ci-oai-spgwc:/home/build/log/spgwc.txt archives/spgwc_compile.log", new_host_flag, new_host_user, new_host)
                 copyFrom2ndServer('archives/spgwc_build.log', 'archives', new_host_flag, new_host_user, new_host)
+                copyFrom2ndServer('archives/spgwc_compile.log', 'archives', new_host_flag, new_host_user, new_host)
               }
             }
             success {
@@ -263,7 +265,9 @@ pipeline {
           post {
             always {
               script {
+                myShCmd('docker ci-oai-spgwu:/home/build/log/spgwu.txt archives/spgwu_compile.log", new_host_flag, new_host_user, new_host)
                 copyFrom2ndServer('archives/spgwu_build.log', 'archives', new_host_flag, new_host_user, new_host)
+                copyFrom2ndServer('archives/spgwu_compile.log', 'archives', new_host_flag, new_host_user, new_host)
               }
             }
             success {
@@ -420,13 +424,22 @@ pipeline {
         myShCmd('docker network prune --force', new_host_flag, new_host_user, new_host)
         // Later on maybe we will restart docker?
         //myShCmd('sudo service docker restart', new_host_flag, new_host_user, new_host)
-        if (fileExists('test_results_oai_cn.html')) {
-          archiveArtifacts artifacts: 'test_results_oai_cn.html'
-        }
         // Zipping all archived log files
         sh "zip -r -qq docker_logs.zip archives"
         if (fileExists('docker_logs.zip')) {
           archiveArtifacts artifacts: 'docker_logs.zip'
+        }
+        // Generating the HTML report
+        if (env.ghprbPullId != null) {
+          sh "python3 scripts/generateHtmlReport.py --job_name=${JOB_NAME} --job_id=${BUILD_ID} --job_url=${BUILD_URL} --git_url=${GIT_URL} --git_src_branch=${env.ghprbSourceBranch} --git_src_commit=${env.ghprbActualCommit} --git_pull_request=True --git_target_branch=${env.ghprbTargetBranch} --git_target_commit=${GIT_COMMIT}"
+          sh "sed -i -e 's#TEMPLATE_PULL_REQUEST_LINK#${env.ghprbPullLink}#g' test_results_oai_cn.html"
+          sh "sed -i -e 's#TEMPLATE_PULL_REQUEST_TEMPLATE#${env.ghprbPullTitle}#' test_results_oai_cn.html"
+        } else {
+          sh "python3 scripts/generateHtmlReport.py --job_name=${JOB_NAME} --job_id=${BUILD_ID} --job_url=${BUILD_URL} --git_url=${GIT_URL} --git_src_branch=${GIT_BRANCH} --git_src_commit=${GIT_COMMIT}"
+        }
+		sh "sed -i -e 's#TEMPLATE_TIME#${JOB_TIMESTAMP}#' test_results_oai_cn.html"
+        if (fileExists('test_results_oai_cn.html')) {
+          archiveArtifacts artifacts: 'test_results_oai_cn.html'
         }
         // Sending an email to the last committer. Maybe not the Pull Request's author.
         def emailTo = getCommitterEmail()
