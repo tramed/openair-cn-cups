@@ -50,8 +50,8 @@ class HtmlReport():
 		self.containerStartRow()
 		self.installLibsPackagesRow()
 		self.buildCompileRows()
-		#self.configurationRow()
-		#self.startStopCheckRow()
+		self.configurationRow()
+		self.startStopCheckRow()
 		self.buildSummaryFooter()
 
 		self.testSummaryHeader()
@@ -429,12 +429,7 @@ class HtmlReport():
 		self.file.write(cell_msg)
 
 	def analyze_compile_log(self, nfType):
-		return
-
-		if nfType == 'MME':
-			logFileName = nfType.lower() + '_compile.log'
-		else:
-			logFileName = nfType.lower() + '_build.log'
+		logFileName = nfType.lower().replace('-','') + '_compile.log'
 
 		cwd = os.getcwd()
 		nb_errors = 0
@@ -468,27 +463,17 @@ class HtmlReport():
 	def configurationRow(self):
 		self.file.write('	 <tr>\n')
 		self.file.write('	   <td bgcolor="lightcyan" >cNF Configuration</td>\n')
-		self.analyze_config_log('Cassandra')
-		self.analyze_config_log('HSS')
-		self.analyze_config_log('MME')
+		self.analyze_config_log('SPGW-C')
+		self.analyze_config_log('SPGW-U')
 		self.file.write('	 </tr>\n')
 
 	def analyze_config_log(self, nfType):
-		if nfType == 'Cassandra':
-			cell_msg = '      <td bgcolor="LightGray"><pre style="border:none; background-color:LightGray"><b>'
-			cell_msg += 'N/A</b></pre></td>\n'
-			self.file.write(cell_msg)
-			return
-
-		logFileName = nfType.lower() + '_config.log'
+		logFileName = nfType.lower().replace('-','') + '_config.log'
 		pattern = 'OAI-' + nfType.upper() + ' CONFIG:'
 
 		cwd = os.getcwd()
 		if os.path.isfile(cwd + '/archives/' + logFileName):
 			status = False
-			nb_subs = 0
-			nb_mme_isdn = 0
-			nb_certificate = 0
 			with open(cwd + '/archives/' + logFileName, 'r') as logfile:
 				for line in logfile:
 					result = re.search(pattern, line)
@@ -496,20 +481,6 @@ class HtmlReport():
 						result = re.search('OK', line)
 						if result is not None:
 							status = True
-					if nfType == "HSS":
-						result = re.search('Subscription-Data', line)
-						if result is not None:
-							nb_subs += 1
-						result = re.search('mme-isdn', line)
-						if result is not None:
-							nb_mme_isdn += 1
-						result = re.search('Certificate is to be certified', line)
-						if result is not None:
-							nb_certificate += 1
-					if nfType == "MME":
-						result = re.search('Certificate is to be certified', line)
-						if result is not None:
-							nb_certificate += 1
 				logfile.close()
 			if status:
 				cell_msg = '      <td bgcolor="LimeGreen"><pre style="border:none; background-color:LimeGreen"><b>'
@@ -517,18 +488,7 @@ class HtmlReport():
 			else:
 				cell_msg = '      <td bgcolor="Tomato"><pre style="border:none; background-color:Tomato"><b>'
 				cell_msg += 'KO:\n'
-			if nfType == 'HSS':
-				cell_msg += ' -- ' + str(nb_subs) + ' users were provisioned\n'
-				cell_msg += ' -- ' + str(int(nb_mme_isdn / 2)) + ' mme instance(s) were provisioned\n'
-				if nb_certificate > 0:
-					cell_msg += ' -- certificates were generated</b></pre></td>\n'
-				else:
-					cell_msg += ' -- certificates were NOT generated</b></pre></td>\n'
-			if nfType == 'MME':
-				if nb_certificate > 0:
-					cell_msg += ' -- certificates were generated</b></pre></td>\n'
-				else:
-					cell_msg += ' -- certificates were NOT generated</b></pre></td>\n'
+			cell_msg += '</b></pre></td>\n'
 		else:
 			cell_msg = '      <td bgcolor="Tomato"><pre style="border:none; background-color:Tomato"><b>'
 			cell_msg += 'KO: logfile (' + logFileName + ') not found</b></pre></td>\n'
@@ -538,19 +498,12 @@ class HtmlReport():
 	def startStopCheckRow(self):
 		self.file.write('	 <tr>\n')
 		self.file.write('	   <td bgcolor="lightcyan" >cNF Check Start / Stop</td>\n')
-		self.analyze_check_run_log('Cassandra')
-		self.analyze_check_run_log('HSS')
-		self.analyze_check_run_log('MME')
+		self.analyze_check_run_log('SPGW-C')
+		self.analyze_check_run_log('SPGW-U')
 		self.file.write('	 </tr>\n')
 
 	def analyze_check_run_log(self, nfType):
-		if nfType == 'Cassandra':
-			cell_msg = '      <td bgcolor="LightGray"><pre style="border:none; background-color:LightGray"><b>'
-			cell_msg += 'N/A</b></pre></td>\n'
-			self.file.write(cell_msg)
-			return
-
-		logFileName = nfType.lower() + '_check_run.log'
+		logFileName = nfType.lower().replace('-','') + '_check_run.log'
 
 		cwd = os.getcwd()
 		if os.path.isfile(cwd + '/archives/' + logFileName):
@@ -558,65 +511,40 @@ class HtmlReport():
 			subprocess.run(myCmd, shell=True)
 			myCmd = 'mv ' + cwd + '/archives/' + logFileName + '.conv '  + cwd + '/archives/' + logFileName
 			subprocess.run(myCmd, shell=True)
-			nb_opc_generation = 0
-			freeDiameterUp = False
-			connectionWithMME = False
-			connectionWithHSS = False
-			sctp_status = False
+			nb_pfcp_hb_proc = 0
+			nb_sx_hb_resp = 0
+			nb_sx_hb_req = 0
 			with open(cwd + '/archives/' + logFileName, 'r') as logfile:
 				for line in logfile:
-					result = re.search('Compute opc', line)
+					result = re.search('PFCP HEARTBEAT PROCEDURE', line)
 					if result is not None:
-						nb_opc_generation += 1
-					result = re.search('The freeDiameter engine has been started|Diameter identity of MME', line)
+						nb_pfcp_hb_proc += 1
+					result = re.search('SX HEARTBEAT RESPONSE', line)
 					if result is not None:
-						freeDiameterUp = True
-					result = re.search('STATE_OPEN.*mme', line)
+						nb_sx_hb_resp += 1
+					result = re.search('SX HEARTBEAT REQUEST', line)
 					if result is not None:
-						connectionWithMME = True
-					result = re.search('Peer hss.* is now connected', line)
-					if result is not None:
-						connectionWithHSS = True
-					result = re.search('Received SCTP_INIT_MSG', line)
-					if result is not None:
-						sctp_status = True
+						nb_sx_hb_req += 1
 				logfile.close()
-			if nfType == 'HSS':
-				if nb_opc_generation > 0 and freeDiameterUp and connectionWithMME:
+			if nfType == 'SPGW-C':
+				if nb_pfcp_hb_proc > 0:
 					cell_msg = '      <td bgcolor="LimeGreen"><pre style="border:none; background-color:LimeGreen"><b>'
 					cell_msg += 'OK:\n'
 				else:
 					cell_msg = '      <td bgcolor="Tomato"><pre style="border:none; background-color:Tomato"><b>'
 					cell_msg += 'KO:\n'
-				cell_msg += '  -- ' + str(nb_opc_generation) + ' OPC were re-generated\n'
-				if freeDiameterUp:
-					cell_msg += '  -- Free Diameter engine is UP\n'
-				else:
-					cell_msg += '  -- Free Diameter engine is DOWN?\n'
-				if connectionWithMME:
-					cell_msg += '  -- Connection w/ MME is OK\n'
-				else:
-					cell_msg += '  -- Connection w/ MME is KO\n'
+				cell_msg += '  -- started ' + str(nb_pfcp_hb_proc) + ' PFCP HEARTBEAT PROCEDURE(s)\n'
 				cell_msg += '</b></pre></td>\n'
-			if nfType == 'MME':
-				if freeDiameterUp and connectionWithHSS and sctp_status:
+			if nfType == 'SPGW-U':
+				if nb_pfcp_hb_proc > 0 and nb_sx_hb_resp > 0 and nb_sx_hb_req > 0:
 					cell_msg = '      <td bgcolor="LimeGreen"><pre style="border:none; background-color:LimeGreen"><b>'
 					cell_msg += 'OK:\n'
 				else:
 					cell_msg = '      <td bgcolor="Tomato"><pre style="border:none; background-color:Tomato"><b>'
 					cell_msg += 'KO:\n'
-				if freeDiameterUp:
-					cell_msg += '  -- Free Diameter engine is UP\n'
-				else:
-					cell_msg += '  -- Free Diameter engine is DOWN?\n'
-				if connectionWithHSS:
-					cell_msg += '  -- Connection w/ HSS is OK\n'
-				else:
-					cell_msg += '  -- Connection w/ HSS is KO\n'
-				if sctp_status:
-					cell_msg += '  -- SCTP is OK\n'
-				else:
-					cell_msg += '  -- SCTP is KO?\n'
+				cell_msg += '  -- started ' + str(nb_pfcp_hb_proc) + ' PFCP HEARTBEAT PROCEDURE(s)\n'
+				cell_msg += '  -- received ' + str(nb_sx_hb_req) + ' SX HEARTBEAT REQUEST(s)\n'
+				cell_msg += '  -- received ' + str(nb_sx_hb_resp) + ' SX HEARTBEAT RESPONSE(s)\n'
 				cell_msg += '</b></pre></td>\n'
 		else:
 			cell_msg = '      <td bgcolor="Tomato"><pre style="border:none; background-color:Tomato"><b>'
