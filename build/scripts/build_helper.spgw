@@ -221,8 +221,8 @@ check_install_spgwc_deps() {
   ret=$?;[[ $ret -ne 0 ]] && return $ret
 
   # Use fmt lib included in spdlog
-  #install_fmt $1
-  #ret=$?;[[ $ret -ne 0 ]] && return $ret
+  install_fmt $1
+  ret=$?;[[ $ret -ne 0 ]] && return $ret
 
   install_fb_folly_from_source $1 $2
   ret=$?;[[ $ret -ne 0 ]] && return $ret
@@ -445,8 +445,8 @@ check_install_spgwu_deps() {
 
 
   # Use fmt lib included in spdlog
-  #install_fmt $1
-  #ret=$?;[[ $ret -ne 0 ]] && return $ret
+  install_fmt $1
+  ret=$?;[[ $ret -ne 0 ]] && return $ret
 
   install_fb_folly_from_source $1 $2
   ret=$?;[[ $ret -ne 0 ]] && return $ret
